@@ -1,0 +1,42 @@
+\documentclass[11pt]{article}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\title{Learning Observable Operator Models via Information Bottleneck}
+\author{David Pfau}
+%\date{}                                           % Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+%\section{}
+%\subsection{}
+
+Given operators $A^x_{ij}$, and a sequence $x_{1:T}$, the probability vector of latent states is updated as
+
+\[
+p(z_t = k|x_{1:t}) = \frac{\sum_n A^{x_t}_{kn} p(z_{t-1}=n|x_{1:t-1})}{\sum_m\sum_n A^{x_t}_{mn} p(z_{t-1}=n|x_{1:t-1})}
+\]
+
+And the conditional probability is given by 
+
+\[
+p(x_t|x_{1:t-1}) = \sum_m\sum_n A^{x_t}_{mn} p(z_{t-1}=n|x_{1:t-1})
+\]
+
+Really, $A^x_{ij}$ is just a shorthand for $p(x_t = x, z_t = i | z_{t-1} = j)$.  Naturally then, the operators $A^x_{ij}$ are restricted such that $\displaystyle\sum_{x,i}A^x_{ij}= 1$
+
+For a given sequence, the predictive performance of the set of operators is well summarized by $H[A] = -\frac{1}{T}$log($p(x_{1:T})$), while the complexity of the model is well summarized by the entropy of the stationary distribution of the hidden states, i.e. $I[A] = \sum_k p(k)$log$(p(k))$ where $p(k) = \frac{1}{T}\displaystyle\sum_{t = 1}^T p(z_t=k|x_{1:t})$.  Introducing a factor $\beta$ that quantifies the tradeoff between prediction and complexity, we then see to minimize 
+
+\[
+I[A] - \beta H[A]
+\]
+
+subject to the normalization condition above.
+
+\end{document}  

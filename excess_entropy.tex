@@ -1,0 +1,89 @@
+\documentclass[11pt]{article}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\newcommand{\Ipred}{\mathcal{I}_{pred}}
+\newcommand{\C}{CGY}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\title{Excess Entropy and Hidden Markov Models}
+\author{David Pfau}
+%\date{}                                           % Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+%\section{}
+%\subsection{}
+
+Excess entropy is defined as the mutual information between an infinite past and infinite future: $C[X] = I[X_{-\infty:0};X_{1:\infty}]$.  If the future from time $t$ on is independent of the past given some latent state $Z_t$ (formally: $X_{t:\infty} \perp X_{-\infty:t-1} | Z_t$), then this mutual information can be expanded out given several convenient identities from information theory, foremost among them the chain rule for mutual information:
+
+\[
+I[X;Y,Z] = I[X;Y] + I[X;Z|Y] = I[X;Z] + I[X;Y|Z]
+\]
+
+In particular, in the case where the Markov condition $X\rightarrow Y\rightarrow Z$ holds, $I[X;Z|Y] = 0$ and so $I[X;Z] = I[Y;Z] - I[Y;Z|X] = I[Y;X] - I[Y;X|Z]$.  Given our Markov assumptions about the latent state:
+
+\[
+\C[X] = I[X_{1:\infty};Z_1] - I[X_{1:\infty};Z_1|X_{-\infty:0}]
+\]
+
+Expanding out $X_{1:\infty}$ as $X_1$ and $X_{2:\infty}$ and again applying the chain rule for mutual information:
+
+\[
+\C[X] = I[X_1;Z_1] + I[X_{2:\infty};Z_1|X_1] - I[X_1;Z_1|X_{-\infty:0}] - I[X_{2:\infty};Z_1|X_{-\infty:1}]
+\]
+
+Moreover, $X_{2:\infty} \perp Z_1 | Z_2$, so once more expanding:
+
+\begin{eqnarray*}
+\C[X] & = & I[X_1;Z_1] + I[X_{2:\infty};Z_2|X_1] - I[X_{2:\infty};Z_2|Z_1,X_1] \\
+& & - I[X_1;Z_1|X_{-\infty:0}] - I[X_{2:\infty};Z_2|X_{-\infty:1}] + I[X_{2:\infty};Z_2|Z_1,X_{-\infty:1}]
+\end{eqnarray*}
+
+And as $Z_2, X_{2:\infty} \perp X_{-\infty:0} | Z_1,X_1$, the last terms on each line cancel out, and 
+
+\[
+\C[X] = I[X_1;Z_1] + I[X_{2:\infty};Z_2|X_1] - I[X_1;Z_1|X_{-\infty:0}] - I[X_{2:\infty};Z_2|X_{-\infty:1}] 
+\]
+
+This line of reasoning seems difficult, perhaps because we began with the infinite limit and tried to work from there.  It may be simpler to start with the mutual information between a finite past and future, or the predictive information $\Ipred(T',T) = I[X_{-T':0};X_{1:T}]$.  Applying the same derivation as above yields
+
+\begin{eqnarray*}
+\Ipred(T',T) & = & I[X_{1:T};Z_1] - I[X_{1:T};Z_1|X_{-T':0}] \\
+& = & I[X_1;Z_1] - I[X_1;Z_1|X_{-T':0}] + I[X_{2:T};Z_2|X_1] - I[X_{2:T};Z_2|X_{-T':1}] \\
+& = & \sum_{t=1}^T I[X_t;Z_t|X_{1:t-1}] - I[X_t;Z_t|X_{-T':t-1}] \\
+\Ipred(T,\infty) & = & \sum_{t=1}^\infty I[X_t;Z_t|X_{1:t-1}] - I[X_t;Z_t|X_{-T:t-1}]
+\end{eqnarray*}
+
+By stationarity, this is equivalent to
+
+\begin{eqnarray*}
+\Ipred(T,\infty) & = & \sum_{t=1}^\infty I[X_1;Z_1|X_{2-t:0}] - I[X_1;Z_1|X_{1-T-t:0}] \\
+& = & I[X_1;Z_1] + \sum_{t=1-T}^0 I[X_1;Z_1|X_{t:0}]
+\end{eqnarray*}
+
+And so, in the limit
+
+\[
+\Ipred(\infty,\infty) = \C[X] = I[X_1;Z_1] + \sum_{t = -\infty}^0 I[X_1;Z_1|X_{t:0}]
+\]
+
+We can split the mutual information into a difference of entropies:
+
+\[
+I[X_1;Z_1|X_{-T:0}] = H[X_1|X_{-T:0}] - H[X_1|Z_1]
+\]
+
+And plugging back in gives:
+
+\[
+\C[X] = \lim_{t\rightarrow\infty} H[X_{1:t}] - tH[X_1|Z_1]
+\]
+
+Which clearly demonstrates the relationship between predictive information and the entropy rate: that the predictive information is the {\em subextenstive} component of the block entropy.  $H[X_1|Z_1]$ is not difficult to calculate.  To find the block entropy of the sequence requires a bit more cleverness.
+
+\end{document}  
