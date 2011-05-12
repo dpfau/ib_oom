@@ -1,0 +1,127 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{nips11submit_e,times}
+\usepackage{amsfonts}
+%\documentstyle[nips10submit_09,times,art10]{article} % For LaTeX 2.09
+
+
+\title{Minimum Description Length Hidden Markov Models}
+
+
+\author{
+David Pfau
+\texttt{pfau@neurotheory.columbia.edu}
+}
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to \LaTeX{} to determine where to break
+% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
+% puts 3 of 4 authors names on the first line, and the last on the second
+% line, try using \AND instead of \And before the third author name.
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+%\nipsfinalcopy % Uncomment for camera-ready version
+
+\begin{document}
+
+
+\maketitle
+
+\begin{abstract}
+We investigate how much information the belief state of a hidden Markov model contains about the history.  We show that this quantity is related to the entropy of the stationary distribution over belief states, which is a distribution over distributions.  The support of this distribution takes up only a small area of state space, and has a fractal structure for discrete observation HMMs.  We consider two properties of this distribution, the entropy at fixed precision, which we call the {\em memory}, and the rate at which the log entropy increases as precision increases, which we call the {\em sensitivity}.  We give a fast approximate algorithm for calculating both, and show how minimizing one or the other affects learning on model data.
+\end{abstract}
+
+\section{Background}
+
+Bottleneck methods have attracted significant attention in recent years for learning hidden Markov models \cite{Hsu2008, reduced rank hmm?}, nonlinear dynamical systems \cite{Langford2009} and predictive representations of state \cite{Boots2009,Boots2010}.  These methods are largely based on low-rank decompositions of some empirical probability between past and future, or supervised learning techniques for mapping beliefs and observations at one time to beliefs at the next.  They do not quantify {\em how much} information is lost about the past when updating beliefs, and so it is hard to quantify how good they are at trading off compression and prediction.  The information bottleneck \cite{Tishby1998} makes this tradeoff explicit, and in the context of time series has been applied to driven linear dynamical systems \cite{Creutzig2009}.  A related approach has been developed based on minimal sufficient statistics, which optimally compress the past without sacrificing prediction performance \cite{Shalizi2004}, but the belief state at any time is taken to be one of a countable number of possibilites, rather than vector-valued, which may be cumbersome and hard to learn for complex models.
+
+\subsection{Information Bottleneck}
+
+The information bottleneck is a principle for lossy encoding of a signal in a way that preserves {\em relevant} information about another signal.  That is, given signals $X$ and $Y$ for which we know the joint probability $p(x,y)$, we want to pick an encoding $p(\hat{x}|x)$ that minimizes $I[X;\hat{X}]$, the amount that $\hat{X}$ compresses $X$, while maximizing $I[Y;\hat{X}]$, the amount that $\hat{X}$ predicts $Y$.  $I[X;\hat{X}]$ is bound above by $H[X]$, while the data processing inequality says that $I[Y;\hat{X}]$ is bound above by $I[Y;X]$.  We cannot in general find a perfect balance between prediction and compression, and so have to pick a temperature parameter $\beta$ that controls the tradeoff between them.  Given this, we can write down the information bottleneck objective:
+
+\begin{equation}
+\mathcal{L}_{IB} = I[X;\hat{X}] - \beta I[Y;\hat{X}]
+\label{IB}
+\end{equation}
+
+In practice, $\hat{X}$ is usually chosen to be some discrete set of possible symbols, and so minimizing eq.\ref{IB} amounts to finding a clustering of $X$ that is maximally predictive of $Y$.  In the limit $\beta\rightarrow 0$ all data collapses into a single cluster, while in the $\beta\rightarrow\infty$ limit each datum is assigned to its own cluster.  For sequence models the information bottleneck principle has a certain conceptual appeal, because in most cases what we are trying to do is find the best way of encoding the past for predicting the future.  To date many bottleneck approaches have been successfully applied to sequence learning and even learning observable representations of hidden Markov models, some based on low-rank approximations to state transition matrices, some based on learning minimal sufficient statistics.  However none have explicitly used the information bottleneck principle, which means they cannot quantify how much tradeoff there is between prediction and compression.
+
+\subsection{Observable Representation of Hidden Markov Models}
+
+Observable operator models are a class of sequence models based on a simple observation about hidden Markov models.  For HMMs, we can express the model parameters as a set of matrices $A_x$, one for each observable symbol $x$ from the set of observables $\mathcal{O}$, such that $A_{x,ij} = P(X_t=x, Z_{t+1} = i | Z_t = j)$, where $Z_t$ is the latent state at time $t$.  Then the probability of any sequence $x_{1:t}$ is given by $\vec{1}^T A_{x_t} A_{x_{t-1}}\ldots A_{x_0} \vec{z}_0$ where $\vec{z}_0$ is the initial distribution over latent states.  For any arbitrary $A_x$, including those with negative entries, so long as the columns of $\sum_{x} A_x$ add up to 1 we will still get a sensible number for the probability of any observed sequence.  Models of this type are strictly more general that HMMs and go by the name Observable Operator Models (OOM).  The belief vector $\vec{b}_t$ cannot be interpreted as a distribution over latent states, instead it is simply a vector that summarizes everything about the history necessary for prediction.  We restrict it so that it always sums to 1, however it may still have negative entries.  We assume we are given the initial belief vector $\vec{b}_0$, and then belief vectors are updated as follows:
+
+\begin{equation}
+\vec{b}_{t+1} = f_x(\vec{b}_t) = \frac{A_{x_t}\vec{b}_t}{\vec{1}^T A_{x_t}\vec{b}_t}
+\label{belief}
+\end{equation}
+
+While the conditional probability is given by the normalizer above
+
+\begin{equation}
+p(x_{t}|x_{1:t-1}) = \vec{1}^T A_{x_{t}}\vec{b_t}
+\label{conditional}
+\end{equation}
+
+The initial belief vector can also be chosen so that sequences are stationary, that is $P(X_0 = x_0, X_1 = x_1,\ldots X_t = x_t) = P(X_k = x_0, X_{k+1} = x_1,\ldots,X_{k+t} = x_t)$ for all $k$ and $t$.  In this case $\vec{b}_0$ is equal to the eigenvector of $\sum_x A_x$ with eigenvalue 1, which must exist since the columns sum to 1, and can quickly be calculated by iteratively multiplying any vector by $\sum_x A_x$.  Stationarity is a necessary assumption for calculating the mutual information between belief states and an infinite past, which we will do in the next section.
+
+\section{The Width of the Bottleneck}
+
+\subsection{Compressing the Past}
+
+The information about the past contained in the belief state is given by $I[B_t;X_{-\infty:t}]$.  We need to be very explicit here and state that we are taking the mutual information between the past and the {\em belief vector}, not latent state.  The belief vector is updated deterministically at each time step according to eq.\ref{belief}.  The latent state, by contrast, is a random variable which is uncertain even given an infinite history.  Encoding the past with the latent state would be equivalent to sampling from $\vec{b}_t$ and predicting the next value according to only that latent state, rather than a mixture over latent states.  In addition to being inefficient, it is significantly harder to calculate the mutual information between $X_{-\infty:t}$ and $Z_t$, because updates are not deterministic.  Whereas for $B_t$, the expression is quite simple:
+
+\begin{equation}
+I[B_t;X_{-\infty:t}] = H[B_t] - H[B_t|X_{-\infty:t}] = H[B]
+\end{equation}
+
+Where the conditional entropy vanishes because belief updates are deterministic, and we drop the subscript because we assume the sequence is stationary.  (Should point out somewhere that this is very similar to the complexity measure of Crutchfield and Young, except they take the entropy of the causal states...but that would entail a digression into causal state machines).  
+
+\subsection{The Stationary Belief Measure}
+
+What is this random variable $B$?  For an HMM with $n$ latent states, it is the measure on the $n$-dimensional simplex that is invariant under the updates given by eq.\ref{belief} and eq.\ref{conditional}:
+
+\begin{equation}
+B(\omega) = \sum_{x\in\mathcal{O}} \int_{f_x^{-1}(\omega)} p(x|\vec{b}) B(d\vec{b})
+\end{equation}
+
+This measure has support on a subset $\Omega$ of the simplex which has the property that the union of its images under the maps $f_x$ is the set itself:
+
+\begin{equation}
+\Omega = \bigcup_{x\in\mathcal{O}} f_x(\Omega)
+\end{equation}
+
+The belief updates thus form an {\em iterated function system}, and the fixed set $\Omega$ is a fractal.  
+
+\subsection{Finite Precision Description Length}
+
+Since $B$ is continuous-valued, $H[B]$ does not have an obvious interpretation in terms of coding length.  If the vector can be encoded to infinite precision, then no information about the past is ever lost.  Of course in practice we only keep track of $\vec{b}$ to some finite precision $\epsilon$.  For random variables in $\mathbb{R}^n$ with density $p(x)$, the expected code length of the $\epsilon$-precision approximation is given by 
+
+\begin{equation}
+\mathbb{E}[\ell(x)] \approx \mathbb{E}[\mathrm{log}(p(x)\epsilon^n)] = \mathbb{E}[\mathrm{log}(p(x))] + n\mathrm{log}(\epsilon) = H[X] + n\mathrm{log}(\epsilon)
+\end{equation}
+
+Then the code length of a vector is given by 
+
+\begin{equation}
+\ell(\vec{b}) = \mathrm{log}(B(B_\epsilon(\vec{b}))) \approx \mathrm{log}(p(\vec{b})\epsilon^d)
+\end{equation}
+
+where $B_\epsilon(\vec{b})$ is the $\epsilon$-ball around $\vec{b}$ \footnote{Apologies for the multiple $B$s, but consistency with the notation in the literature demands using $B$ for belief.  The natural alternative, $H$ for hidden, would lead to $H[H]$ for the entropy, which is nearly as bad.}, $p(\vec{b})$ is a density constructed by smearing out the measure $B$ by an amount smaller than $\epsilon$.  The quantity $d$ in 
+
+\section{Fast Estimation of Box Counting Dimension with Locality Sensitive Hashing...maybe?}
+
+\section{Um...maybe run some experiments here?}
+
+\subsubsection*{Acknowledgments}
+
+
+\subsubsection*{References}
+
+\small{
+
+}
+
+\end{document}

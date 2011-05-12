@@ -17,6 +17,8 @@
 %\section{}
 %\subsection{}
 
+\section{First Try}
+
 Given operators $A^x_{ij}$, and a sequence $x_{1:T}$, the probability vector of latent states is updated as
 
 \[
@@ -38,5 +40,9 @@ I[A] - \beta H[A]
 \]
 
 subject to the normalization condition above.
+
+\section{Take Two}
+
+Let's start from a real IB principle, instead of just hacking one together.  It would be nice if we could tractably deal with the mutual information between an infinite past (or future) and an encoding of the past.  Unfortunately, these quantities involve the block entropy of observations, which are intracta
 
 \end{document}  
