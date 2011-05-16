@@ -4,7 +4,7 @@
 %\documentstyle[nips10submit_09,times,art10]{article} % For LaTeX 2.09
 
 
-\title{Minimum Description Length Hidden Markov Models}
+\title{Minimum Memory Hidden Markov Models}
 
 
 \author{
@@ -35,6 +35,8 @@ We investigate how much information the belief state of a hidden Markov model co
 \end{abstract}
 
 \section{Background}
+
+(some other motivational points: interested in HMMs where the latent state space is larger than the observations space, interested in predictive models, rather than inferring latent state, local minima may not be the problem so much as not finding the right objective, even if the right objective is highly nonconvex, though that will depend on results).
 
 Bottleneck methods have attracted significant attention in recent years for learning hidden Markov models \cite{Hsu2008, reduced rank hmm?}, nonlinear dynamical systems \cite{Langford2009} and predictive representations of state \cite{Boots2009,Boots2010}.  These methods are largely based on low-rank decompositions of some empirical probability between past and future, or supervised learning techniques for mapping beliefs and observations at one time to beliefs at the next.  They do not quantify {\em how much} information is lost about the past when updating beliefs, and so it is hard to quantify how good they are at trading off compression and prediction.  The information bottleneck \cite{Tishby1998} makes this tradeoff explicit, and in the context of time series has been applied to driven linear dynamical systems \cite{Creutzig2009}.  A related approach has been developed based on minimal sufficient statistics, which optimally compress the past without sacrificing prediction performance \cite{Shalizi2004}, but the belief state at any time is taken to be one of a countable number of possibilites, rather than vector-valued, which may be cumbersome and hard to learn for complex models.
 
@@ -77,7 +79,7 @@ The information about the past contained in the belief state is given by $I[B_t;
 I[B_t;X_{-\infty:t}] = H[B_t] - H[B_t|X_{-\infty:t}] = H[B]
 \end{equation}
 
-Where the conditional entropy vanishes because belief updates are deterministic, and we drop the subscript because we assume the sequence is stationary.  (Should point out somewhere that this is very similar to the complexity measure of Crutchfield and Young, except they take the entropy of the causal states...but that would entail a digression into causal state machines).  
+Where the conditional entropy vanishes because belief updates are deterministic, and we drop the subscript because we assume the sequence is stationary.  We call this quantity $H[B]$ the {\em memory} of a hidden Markov model, because it quantifies how much information about the past is encoded in the belief vector.  It is also closely related to the measure of complexity of a time series introduced by \cite{Crutchfield1989}, however they encode the past as one of a finite number of "causal states" rather than as a vector.  The memory does not have a direct interpretation in terms of coding length, as it is a differential entropy.  As we describe in Section \ref{estimation}, the estimator that we choose relates $H[B]$ to the nearest neighbor distance between points, so that large $H[B]$ means large separation between nearest neighbors.
 
 \subsection{The Stationary Belief Measure}
 
@@ -103,15 +105,28 @@ Since $B$ is continuous-valued, $H[B]$ does not have an obvious interpretation i
 \mathbb{E}[\ell(x)] \approx \mathbb{E}[\mathrm{log}(p(x)\epsilon^n)] = \mathbb{E}[\mathrm{log}(p(x))] + n\mathrm{log}(\epsilon) = H[X] + n\mathrm{log}(\epsilon)
 \end{equation}
 
-Then the code length of a vector is given by 
+so long as the density $p(x)$ is relatively uniform over distances less than $\epsilon$.  For $B$ this is not the case, since the support $\Omega$ has a complex shape with detail at arbitrarily small scale.  The finite-precision entropy will still scale linearly with $\epsilon$, but the slope of that line will be related to the {\em fractal} dimension of the space.  The fractal dimension is, approximately, the rate at which the log of the number of balls needed to cover a space grows as the size of the ball shrinks.  For more detail on the technical definitions of fractal dimension, their estimation and interrelation, a good resource is \cite{Falconer2003}.
+
+\section{A Minimum Memory Prior for HMMs}
+
+Broadly speaking, to avoid overfitting one should choose the least complex model that fits the data well.  Using $H[B]$ as a measure of the complexity of a particular HMM, a natural learning objective is to find the HMM $\{A_x\}_{x\in\mathcal{O}}$ that minimizes $H[B]$ while maximizing the log likelihood of the data.  We need to pick a hyperparameter $\beta$ that controls how much to trade off complexity and likelihood, and then our learning problem is to minimize
 
 \begin{equation}
-\ell(\vec{b}) = \mathrm{log}(B(B_\epsilon(\vec{b}))) \approx \mathrm{log}(p(\vec{b})\epsilon^d)
+\beta H[B] - \mathrm{log}p(x_{1:t})
 \end{equation}
 
-where $B_\epsilon(\vec{b})$ is the $\epsilon$-ball around $\vec{b}$ \footnote{Apologies for the multiple $B$s, but consistency with the notation in the literature demands using $B$ for belief.  The natural alternative, $H$ for hidden, would lead to $H[H]$ for the entropy, which is nearly as bad.}, $p(\vec{b})$ is a density constructed by smearing out the measure $B$ by an amount smaller than $\epsilon$.  The quantity $d$ in 
+This has a natural interpretation as a log posterior probability, where the prior probability of a HMM is proportional to exp$(-\beta H[B])$.  Thus minimizing this function can be seen as a MAP Bayesian inference.  Unfortunately this prior does not admit a simple generative mechanism.  It is, however, not too difficult to estimate for a given HMM from data.
 
-\section{Fast Estimation of Box Counting Dimension with Locality Sensitive Hashing...maybe?}
+\subsection{Nearest Neighbors Entropy Estimation}
+
+Analytic calculation of $H[B]$ is not practical.  However, given data, we can perform a normal forward pass to get empirical samples $\vec{b}_{1:T}$.  We assume that $\vec{b}_0$, the initial belief vector, is the stationary distribution over latent states.  Estimating differential entropy from data is a well-studied statistical problem with many solutions \cite{Beirlant}.  We use the nearest neighbors estimate:
+
+\begin{equation}
+H[B] \approx \frac{1}{T}\sum_{t=1}^T \mathrm{log}(T\rho_t) + \mathrm{log}(2) + \gamma
+\label{nn-entropy}
+\end{equation}
+
+where $\rho_t$ is the Euclidean distance to the nearest neighbor of $\vec{b}_t$ and $\gamma$ is the Euler-Mascheroni constant.  This estimator is particularly convenient because we do not need to choose any length scale.  To speed calculation of the nearest neighbors distance we arranged the belief vectors in a kd-tree.
 
 \section{Um...maybe run some experiments here?}
 

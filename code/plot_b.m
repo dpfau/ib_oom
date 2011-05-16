@@ -1,7 +1,16 @@
-function [zs seq oom] = plot_b(dim,len)
+function [zs seq oom] = plot_b(dim,len,oom,col)
 
-oom = rand(3,3,dim);
-oom = oom./repmat(sum(sum(oom,3)),[3 1 dim]);
+if nargin < 4
+    col = rand(dim,3);
+    if nargin < 3
+        oom = rand(3,3,dim);
+        oom = oom./repmat(sum(sum(oom,3)),[3 1 dim]);
+    else
+        if dim ~= size(oom,3)
+            error('First argument must be number of observable operators');
+        end
+    end
+end
 
 seq = generate(oom,len);
 zs = zeros(3,len);
@@ -21,7 +30,7 @@ line([x(2,1) x(2,1) x(2,2); x(2,2) x(2,3) x(2,3)],[x(1,1) x(1,1) x(1,2); x(1,2) 
 axis square; hold on
 
 for i = 1:dim
-    scatter(proj(2,seq==i),proj(1,seq==i),1,rand(1,3));
+    scatter(proj(2,seq==i),proj(1,seq==i),1,col(i,:));
 end
 
-title(['Sensitivity: ' num2str(log(cover(zs,1e-3))/-log(1e-3))])
+% title(['Sensitivity: ' num2str(log(cover(zs,1e-3))/-log(1e-3))])

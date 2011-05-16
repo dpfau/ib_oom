@@ -1,4 +1,4 @@
-function [n,h,h2] = cover(x,dx)
+function [n,h] = cover(x,dx)
 % Finds the number (not necessarily minimal!) of balls of radius dx needed
 % to cover all the points in x (counting each column as a point), as well
 % as the expected code length of a vector encoded to precision dx
@@ -17,4 +17,4 @@ while ~isempty(x)
     n = n + 1;
     h = h - nnn/len*log(nnn/len);
 end
-h2 = h + (n-1)/(2*len); % Miller-Madow bias correction
+h = h + (n-1)/(2*len); % Miller-Madow bias correction
