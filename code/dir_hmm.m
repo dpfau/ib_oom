@@ -1,4 +1,4 @@
-function hmm = dir_hmm(n,m,a,b)
+function [hmm O T] = dir_hmm(n,m,a,b)
 % Returns a random HMM with 'n' observables and 'm' latent states, in the form of an observable operator model.
 % Each observation probability p( x_t | z_t ) is sampled from a uniform Dirichlet with 'a' total pseudocounts
 % Each transition probability p( z_{t+t} | z_t ) is sampled from a uniform Dirichlet with 'b' total pseudocounts

@@ -1,4 +1,4 @@
-function ll = log_p(dat,oom,z_0)
+function [ll p] = log_p(dat,oom,z_0)
 
 if nargin == 2
     z = stat(oom);
@@ -8,14 +8,15 @@ end
 
 l = 0;
 len = 0;
+p = zeros(length(dat),1);
 for t = 1:length(dat)
     seq = dat{t};
     len = len + length(seq);
     for i = 1:length(seq)
         z = oom(:,:,seq(i))*z;
-        p = sum(z);
-        l = l + log(p);
-        z = z/p;
+        p(i) = sum(z);
+        l = l + log(p(i));
+        z = z/p(i);
     end
 end
 

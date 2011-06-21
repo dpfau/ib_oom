@@ -1,4 +1,4 @@
-function [seq log_p] = generate(oom,len,z_0)
+function [seq log_p] = gen_oom(oom,len,z_0)
 
 if nargin == 2 % initialize to the stationary distribution of the latent states
    z_0 = stat(oom);
