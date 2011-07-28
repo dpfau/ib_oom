@@ -17,10 +17,11 @@ while 1
     p_zx = p_zx./(ones(k,1)*sum(p_zx)); % normalize
     p_z  = p_zx*p_x;
     p_yz = p_yx*(p_zx.*((1./p_z)*p_x'))';
+    imagesc(p_zx); drawnow
     
     Iyz = I(p_z,p_yz);
     Izx = I(p_x,p_zx);
-    if abs(obj - (Iyz - b*Izx)) < 1e-8
+    if abs(obj - (Izx - b*Iyz)) < 1e-8
         if b <= b1
             break; 
         else
@@ -40,7 +41,7 @@ while 1
             Izx = I(p_x,p_zx);
         end
     end
-    obj  = Iyz - b*Izx;
+    obj  = Izx - b*Iyz;
     
 %     subplot(3,1,1); imagesc(p_zx); title('p(z|x)')
 %     subplot(3,1,2); imagesc(p_zx.*((1./p_z)*p_x'));  title('p(x|z)')

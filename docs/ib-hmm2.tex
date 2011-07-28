@@ -1,0 +1,47 @@
+\documentclass[11pt]{article}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\title{Brief Article}
+\author{The Author}
+%\date{}                                           % Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+%\section{}
+%\subsection{}
+
+\[
+A^{k}_{ij} = P(z_{t+1} = j | x_t = k, z_t = i)
+\]
+
+\[
+\phi^k_i = P(x_t = k | z_t = i)
+\]
+
+\[
+\sum_i \sum_k A^k_{ij} \phi^k_i \pi_i = \pi_j = P(z_t = j)
+\]
+
+\[
+\sum_i \phi^k_i \pi_i = \lambda^k = p(x_t = k)
+\]
+
+\[
+\ell(x,z|\theta) = \beta \sum_{t=0}^T \mathrm{log}\phi^{x_t}_{z_t} - \sum_{t=0}^{T-1} \mathrm{log}\frac{\pi_{z_{t+1}}}{A^{x_t}_{z_t z_{t+1}}}
+\]
+
+or 
+
+\[
+\ell(x,z|\theta) = \beta \sum_{t=0}^T \mathrm{log}\frac{\lambda^{x_t}}{\phi^{x_t}_{z_t}} - \sum_{t=0}^{T-1} \mathrm{log}\frac{\pi_{z_{t+1}}}{A^{x_t}_{z_t z_{t+1}}}
+\]
+
+\end{document}  
+
