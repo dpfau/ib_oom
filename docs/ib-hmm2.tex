@@ -5,11 +5,12 @@
 %\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
 \usepackage{graphicx}
 \usepackage{amssymb}
+\usepackage{amsfonts}
 \usepackage{epstopdf}
 \DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
 
-\title{Brief Article}
-\author{The Author}
+\title{EM-like algorithms for training HMMs with IB}
+\author{David Pfau}
 %\date{}                                           % Activate to display a given date or no date
 
 \begin{document}
@@ -33,15 +34,70 @@ A^{k}_{ij} = P(z_{t+1} = j | x_t = k, z_t = i)
 \sum_i \phi^k_i \pi_i = \lambda^k = p(x_t = k)
 \]
 
+\section{Forward-Backward}
+
+\begin{eqnarray*}
+\alpha(\mathbf{z}_t) & = & p(x_0,\ldots,x_{t-1},\mathbf{z}_t) \\
+\beta(\mathbf{z}_t) & = & p(x_t,\ldots,x_T|\mathbf{z}_t) \\
+%\alpha(\mathbf{z}_t) & = & p(x_0,\ldots,x_t,z_t) \\
+%\beta(\mathbf{z}_t) & = & p(x_{t+1},\ldots,x_T|z_t) \\
+\gamma(\mathbf{z}_t) & = & \frac{\alpha(\mathbf{z}_t)\beta(\mathbf{z}_t)}{p(x_0,\ldots,x_T)} \\
+\xi(\mathbf{z}_t,\mathbf{z}_{t+1}) & = & p(\mathbf{z}_t,\mathbf{z}_{t+1}|x_0,\ldots,x_T) \\
+& = & \frac{p(x_0,\ldots,x_{t-1}|\mathbf{z}_{t},\mathbf{z}_{t+1})p(x_{t+1},\ldots,x_T|\mathbf{z}_{t},\mathbf{z}_{t+1})p(\mathbf{z}_t,\mathbf{z}_{t+1},x_t)}{p(x_0,\ldots,x_T)} \\
+& = & \frac{\alpha(\mathbf{z}_t)\beta(\mathbf{z}_{t+1})A^{x_t}_{\mathbf{z}_t\mathbf{z}_{t+1}}\phi^{x_t}_{\mathbf{z}_t}}{p(x_0,\ldots,x_T)}
+%\xi(\mathbf{z}_t,\mathbf{z}_{t+1}) & = & \frac{\alpha(\mathbf{z}_t)\phi^{x_{t+1}}_{\mathbf{z}_{t+1}}(\sum_k A^k_{\mathbf{z}_t\mathbf{z}_{t+1}} \phi^k_{\mathbf{z}_t})\beta(\mathbf{z}_{t+1})}{p(x_0,\ldots,x_T)}
+\end{eqnarray*}
+
+\begin{eqnarray*}
+%\alpha(z_0^i) & = & p(x_0,z_0^i) \\
+\alpha(z_0^i) & = & \pi_i \\
+%& = & \phi^{x_0}_i \pi_i \\
+%\alpha(z_t^i) & = & \phi^{x_t}_i\sum_j \alpha(z_{t-1}^j) \sum_k A^k_{ij} \phi^k_j \\
+\alpha(z_{t+1}^j) & = & \sum_i A^{x_t}_{ij}\phi^{x_t}_i\alpha(z_t^i) \\
+\beta(z_T^i) & = & \phi^{x_T}_i \\
+\beta(z_t^i) & = & \sum_j A^{x_t}_{ij}\phi^{x_t}_i \beta(z_{t+1}^j)
+%\beta(z_t^i) & = &  
+\end{eqnarray*}
+
+\subsection{Scaling}
+
+\[
+\hat{\alpha}(\mathbf{z}_t) = \frac{\alpha(\mathbf{z}_t)}{p(x_0,\ldots,x_{t-1})} = p(\mathbf{z}_t|x_0,\ldots,x_{t-1})
+\]
+
+\[
+\hat{\beta}(\mathbf{z}_t) = \frac{\beta(\mathbf{z}_t)}{p(x_t,\ldots,x_T|x_0,\ldots,x_{t-1})} = \frac{p(x_t,\ldots,x_T|\mathbf{z}_t)}{p(x_t,\ldots,x_T|x_0,\ldots,x_{t-1})}
+\]
+
+\[
+\gamma(\mathbf{z}_t) = \hat{\alpha}(\mathbf{z}_t)\hat{\beta}(\mathbf{z}_t)
+\]
+
+\[
+\xi(\mathbf{z}_t,\mathbf{z}_{t+1}) = \frac{\hat{\alpha}(\mathbf{z}_t)\hat{\beta}(\mathbf{z}_{t+1})A^{x_t}_{\mathbf{z}_t\mathbf{z}_{t+1}}\phi^{x_t}_{\mathbf{z}_t}}{p(x_t|x_0,\ldots,x_{t-1})}
+\]
+
+\section{}
+
 \[
 \ell(x,z|\theta) = \beta \sum_{t=0}^T \mathrm{log}\phi^{x_t}_{z_t} - \sum_{t=0}^{T-1} \mathrm{log}\frac{\pi_{z_{t+1}}}{A^{x_t}_{z_t z_{t+1}}}
 \]
 
-or 
+\begin{eqnarray*}
+\mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] & = & \beta\sum_{t=0}^T\sum_i \gamma(z_t^i) \mathrm{log}\phi_{i}^{x_t} - \sum_{t=0}^{T-1}\sum_i\sum_j \xi(z_{t}^i,z_{t+1}^j)\mathrm{log}\frac{\pi_j}{A^{x^t}_{ij}} \\
+& = & \beta\sum_{t=0}^T\sum_i \gamma(z_t^i) \mathrm{log}\phi_{i}^{x_t} - \sum_{t=0}^{T-1}\sum_j \left(\gamma(z_{t+1}^j)\mathrm{log}\pi_j - \sum_i \xi(z_{t}^i,z_{t+1}^j)\mathrm{log}A^{x^t}_{ij}\right)
+\end{eqnarray*}
+
+\section{}
 
 \[
 \ell(x,z|\theta) = \beta \sum_{t=0}^T \mathrm{log}\frac{\lambda^{x_t}}{\phi^{x_t}_{z_t}} - \sum_{t=0}^{T-1} \mathrm{log}\frac{\pi_{z_{t+1}}}{A^{x_t}_{z_t z_{t+1}}}
 \]
+
+\begin{eqnarray*}
+\mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] & = & \beta\sum_{t=0}^T \left(\mathrm{log}(\sum_i \phi_i^{x_t}\pi_i) - \sum_i \gamma(z_t^i) \mathrm{log}\phi_{i}^{x_t}\right) \\
+& & - \sum_{t=0}^{T-1}\sum_j \left(\gamma(z_{t+1}^j)\mathrm{log}\pi_j - \sum_i \xi(z_{t}^i,z_{t+1}^j)\mathrm{log}A^{x^t}_{ij}\right)
+\end{eqnarray*}
 
 \end{document}  
 
