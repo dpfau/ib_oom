@@ -18,23 +18,36 @@
 %\section{}
 %\subsection{}
 
+The idea is that at each time step we want to compress the past as much as possible without sacrificing predictive power.  At each time step we have a quantized representation of the past $z_t$ and an observation $x_t$ and want to find the distributions $p(z_{t+t}|x_t,z_t)$ that optimally compress the past and $p(x_t|z_t)$ that optimally predicts the next observation.  Following rate-distortion theory, the natural measure of compression would be $I[Z_t,X_t;Z_{t+1}] = H[Z_{t+1}] - H[Z_{t+1}|X_t,Z_t]$ on average, and $-$log$p(z_{t+1}) + $log$p(z_{t+1}|x_t,z_t) = $log$\frac{p(z_{t+1}|x_t,z_t)}{p(z_{t+1})}$ for a single observation.  The natural measure of distortion is the negative log probability of the data.  Varying a temperature parameter $\beta$ controls how much we value minimizing distortion versus minimizing coding length of the past.  At one extreme we remember nothing about the past and assume observations are iid.  At the other extreme, if the state-space is large enough, we assign one state to each history and fit the training data perfectly.
+
+The independence assumptions are not identical to that of an HMM.  Since the encoding of the past depends directly on the observation, $Z_{t+1}$ is not independent of $X_t$ given $Z_t$.  This leads to a slight difference in the E step, which we derive below.  The model is equally expressive to an HMM with more states.
+
+\section{Notation}
+
+The transition distribution, which tells how the past is compressed.
+
 \[
 A^{k}_{ij} = P(z_{t+1} = j | x_t = k, z_t = i)
 \]
+The observation distribution.
 
 \[
 \phi^k_i = P(x_t = k | z_t = i)
 \]
+The stationary distribution of the latent state.
 
 \[
 \sum_i \sum_k A^k_{ij} \phi^k_i \pi_i = \pi_j = P(z_t = j)
 \]
+The marginal probability of an observation (not really used anywhere yet).
 
 \[
 \sum_i \phi^k_i \pi_i = \mu^k = p(x_t = k)
 \]
 
-\section{Forward-Backward}
+\section{E step}
+
+Because the graphical model is a slight change from that of HMMs, we derive an alternate forward-backward algorithm.  Instead of $\alpha(\mathbf{z}_t) = p(x_0,\ldots,x_t,\mathbf{z}_t)$ and $\beta(\mathbf{z}_t) = p(x_{t+1},\ldots,x_T|\mathbf{z}_t)$, the alpha and beta vectors (as well as the sufficient statistics for the M step) are:
 
 \begin{eqnarray*}
 \alpha(\mathbf{z}_t) & = & p(x_0,\ldots,x_{t-1},\mathbf{z}_t) \\
@@ -47,6 +60,7 @@ A^{k}_{ij} = P(z_{t+1} = j | x_t = k, z_t = i)
 & = & \frac{\alpha(\mathbf{z}_t)\beta(\mathbf{z}_{t+1})A^{x_t}_{\mathbf{z}_t\mathbf{z}_{t+1}}\phi^{x_t}_{\mathbf{z}_t}}{p(x_0,\ldots,x_T)}
 %\xi(\mathbf{z}_t,\mathbf{z}_{t+1}) & = & \frac{\alpha(\mathbf{z}_t)\phi^{x_{t+1}}_{\mathbf{z}_{t+1}}(\sum_k A^k_{\mathbf{z}_t\mathbf{z}_{t+1}} \phi^k_{\mathbf{z}_t})\beta(\mathbf{z}_{t+1})}{p(x_0,\ldots,x_T)}
 \end{eqnarray*}
+And the initializations and recursive update formulas (which have an appealingly symmetric form):
 
 \begin{eqnarray*}
 %\alpha(z_0^i) & = & p(x_0,z_0^i) \\
@@ -60,6 +74,8 @@ A^{k}_{ij} = P(z_{t+1} = j | x_t = k, z_t = i)
 \end{eqnarray*}
 
 \subsection{Scaling}
+
+As with regular HMMs, we need to introduce a scaling factor to prevent numerical underflow.  If we normalize the alpha vectors at each step and use those as the scaling factors for beta as well, we get:
 
 \[
 \hat{\alpha}(\mathbf{z}_t) = \frac{\alpha(\mathbf{z}_t)}{p(x_0,\ldots,x_{t-1})} = p(\mathbf{z}_t|x_0,\ldots,x_{t-1})
@@ -77,16 +93,20 @@ A^{k}_{ij} = P(z_{t+1} = j | x_t = k, z_t = i)
 \xi(\mathbf{z}_t,\mathbf{z}_{t+1}) = \frac{\hat{\alpha}(\mathbf{z}_t)\hat{\beta}(\mathbf{z}_{t+1})A^{x_t}_{\mathbf{z}_t\mathbf{z}_{t+1}}\phi^{x_t}_{\mathbf{z}_t}}{p(x_t|x_0,\ldots,x_{t-1})}
 \]
 
-\section{}
+\section{M step}
+
+For a given sequence of data and latent states, we want to minimize the weighted combination of data likelihood (first term) and latent state compression (second term), or maximize:
 
 \[
 \ell(x,z|\theta) = \beta \sum_{t=0}^T \mathrm{log}\phi^{x_t}_{z_t} - \sum_{t=0}^{T-1} \mathrm{log}\frac{\pi_{z_{t+1}}}{A^{x_t}_{z_t z_{t+1}}}
 \]
+Following the derivation of the EM algorithm, we take the expectation of this wrt to the conditional probability of the latent states given the current parameter estimates:
 
 \begin{eqnarray*}
 \mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] & = & \beta\sum_{t=0}^T\sum_i \gamma(z_t^i) \mathrm{log}\phi_{i}^{x_t} - \sum_{t=0}^{T-1}\sum_i\sum_j \xi(z_{t}^i,z_{t+1}^j)\mathrm{log}\frac{\pi_j}{A^{x^t}_{ij}} \\
 & = & \beta\sum_{t=0}^T\sum_i \gamma(z_t^i) \mathrm{log}\phi_{i}^{x_t} - \sum_{t=0}^{T-1}\sum_j \left(\gamma(z_{t+1}^j)\mathrm{log}\pi_j - \sum_i \xi(z_{t}^i,z_{t+1}^j)\mathrm{log}A^{x^t}_{ij}\right)
 \end{eqnarray*}
+To derive the M step, we want to do a constrained maximization over the parameters $\theta = \{\vec{\phi_i},\vec{A}^k_i,\vec{\pi}\}$, where the constraints are that all vectors are normalized and that $\sum_i\sum_k A^k_{ij} \phi^i_k\pi_i = \pi_j$.  Introducing Lagrange multipliers and setting all derivatives equal to zero yields:
 
 \begin{eqnarray*}
 \theta^* & = & arg \max_\theta \mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] \\
@@ -113,8 +133,17 @@ A^k_{ij} & = & \frac{\sum_{t:x_t=k}\xi(z^i_t,z^j_{t+1})}{\lambda^A_{ik} + \lambd
 - \frac{\sum_{t=1}^T\gamma(z^j_t)}{\pi_j} - \lambda^\pi + \lambda^\pi_j - \sum_i \lambda^\pi_i\sum_k A^k_{ji}\phi^k_j & = & 0 \\
 \pi_j & = & \frac{\sum_{t=1}^T \gamma(z_t^j)}{-\lambda^\pi + \lambda^\pi_j - \sum_i\lambda^\pi_i \sum_k A^k_{ji}\phi^k_j}
 \end{eqnarray*}
+The above gives a set of coupled nonlinear equations for $\theta$ (note that unlike in standard Baum-Welch, the transition and emission probabilities are coupled by the stationary distribution term, which causes complex dependencies).  How to solve these, I do not know.
 
-\section{}
+Plugging back in to the condition that $\vec{\pi}$ is the stationary distribution of the Markov chain:
+
+\begin{eqnarray*}
+\sum_i\pi_i\sum_k A^k_{ij}\phi^k_i & = & \\
+\sum_i  \frac{(\sum_{t=1}^T \gamma(z_t^i))\sum_k A^k_{ij}\phi^k_i}{-\lambda^\pi + \lambda^\pi_i - \sum_{j'}\lambda^\pi_{j'} \sum_k A^k_{ij'}\phi^k_i} & = & \frac{\sum_{t=1}^T \gamma(z_t^j)}{-\lambda^\pi + \lambda^\pi_j - \sum_i\lambda^\pi_i \sum_k A^k_{ji}\phi^k_j}
+\end{eqnarray*}
+which is not much more insightful, sadly.
+
+\section{M step with more IB-like objective}
 
 \[
 \ell(x,z|\theta) = \beta \sum_{t=0}^T \mathrm{log}\frac{\mu^{x_t}}{\phi^{x_t}_{z_t}} - \sum_{t=0}^{T-1} \mathrm{log}\frac{\pi_{z_{t+1}}}{A^{x_t}_{z_t z_{t+1}}}
