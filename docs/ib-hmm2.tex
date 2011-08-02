@@ -31,7 +31,7 @@ A^{k}_{ij} = P(z_{t+1} = j | x_t = k, z_t = i)
 \]
 
 \[
-\sum_i \phi^k_i \pi_i = \lambda^k = p(x_t = k)
+\sum_i \phi^k_i \pi_i = \mu^k = p(x_t = k)
 \]
 
 \section{Forward-Backward}
@@ -88,10 +88,43 @@ A^{k}_{ij} = P(z_{t+1} = j | x_t = k, z_t = i)
 & = & \beta\sum_{t=0}^T\sum_i \gamma(z_t^i) \mathrm{log}\phi_{i}^{x_t} - \sum_{t=0}^{T-1}\sum_j \left(\gamma(z_{t+1}^j)\mathrm{log}\pi_j - \sum_i \xi(z_{t}^i,z_{t+1}^j)\mathrm{log}A^{x^t}_{ij}\right)
 \end{eqnarray*}
 
+\begin{eqnarray*}
+\theta^* & = & arg \max_\theta \mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] \\
+& & + \lambda^\pi \left(1 - \sum_j \pi_j \right) \\
+& & + \sum_i\lambda^\phi_i \left(1 - \sum_k\phi_i^k\right) \\
+& & + \sum_i\sum_k\lambda^A_{ik}\left(1-\sum_j A^k_{ij}\right) \\
+& & + \sum_j \lambda^\pi_j\left(\pi_j - \left(\sum_i \sum_k A^k_{ij}\phi^k_i\pi_i\right)\right)
+\end{eqnarray*}
+
+\begin{eqnarray*}
+\frac{\partial}{\partial\phi^k_i} \mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] - \lambda^\phi_i - \sum_j \lambda^\pi_j A^k_{ij}\pi_j & = & \\
+\beta \frac{\sum_{t:x_t = k}\gamma(z_t^i)}{\phi_i^k}  - \lambda^\phi_i  - \sum_j \lambda^\pi_j A^k_{ij}\pi_j & = & 0 \\
+\phi^k_i & = & \frac{\beta \sum_{t:x_t = k} \gamma(z_t^i)}{\lambda^\phi_i + \sum_j \lambda^\pi_j A^k_{ij}\pi_j}
+\end{eqnarray*}
+
+\begin{eqnarray*}
+\frac{\partial}{\partial A^k_{ij}} \mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] - \lambda^A_{ik} - \lambda^\pi_j \phi^k_i\pi_j & = & \\
+\frac{\sum_{t:x_t=k}\xi(z_t^i,z_{t+1}^j)}{A^k_{ij}} - \lambda^A_{ik} - \lambda^\pi_j \phi^k_i\pi_j & = & 0 \\
+A^k_{ij} & = & \frac{\sum_{t:x_t=k}\xi(z^i_t,z^j_{t+1})}{\lambda^A_{ik} + \lambda^\pi_j \phi^k_i \pi_j}
+\end{eqnarray*}
+
+\begin{eqnarray*}
+\frac{\partial}{\partial \pi_j} \mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] - \lambda^\pi + \lambda^\pi_j - \sum_i \lambda^\pi_i\sum_k A^k_{ji}\phi^k_j & = & \\
+- \frac{\sum_{t=1}^T\gamma(z^j_t)}{\pi_j} - \lambda^\pi + \lambda^\pi_j - \sum_i \lambda^\pi_i\sum_k A^k_{ji}\phi^k_j & = & 0 \\
+\pi_j & = & \frac{\sum_{t=1}^T \gamma(z_t^j)}{-\lambda^\pi + \lambda^\pi_j - \sum_i\lambda^\pi_i \sum_k A^k_{ji}\phi^k_j}
+\end{eqnarray*}
+
+Plugging into the original constraint that defined $\pi_j$
+
+\begin{eqnarray*}
+\sum_i \sum_k A^k_{ij} \phi^k_i \pi_i - \pi_j & = & \\
+\sum_i \sum_k A^k_{ij} \phi^k_i 
+\begin{eqnarray*}
+
 \section{}
 
 \[
-\ell(x,z|\theta) = \beta \sum_{t=0}^T \mathrm{log}\frac{\lambda^{x_t}}{\phi^{x_t}_{z_t}} - \sum_{t=0}^{T-1} \mathrm{log}\frac{\pi_{z_{t+1}}}{A^{x_t}_{z_t z_{t+1}}}
+\ell(x,z|\theta) = \beta \sum_{t=0}^T \mathrm{log}\frac{\mu^{x_t}}{\phi^{x_t}_{z_t}} - \sum_{t=0}^{T-1} \mathrm{log}\frac{\pi_{z_{t+1}}}{A^{x_t}_{z_t z_{t+1}}}
 \]
 
 \begin{eqnarray*}
