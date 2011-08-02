@@ -97,15 +97,15 @@ A^{k}_{ij} = P(z_{t+1} = j | x_t = k, z_t = i)
 \end{eqnarray*}
 
 \begin{eqnarray*}
-\frac{\partial}{\partial\phi^k_i} \mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] - \lambda^\phi_i - \sum_j \lambda^\pi_j A^k_{ij}\pi_j & = & \\
-\beta \frac{\sum_{t:x_t = k}\gamma(z_t^i)}{\phi_i^k}  - \lambda^\phi_i  - \sum_j \lambda^\pi_j A^k_{ij}\pi_j & = & 0 \\
-\phi^k_i & = & \frac{\beta \sum_{t:x_t = k} \gamma(z_t^i)}{\lambda^\phi_i + \sum_j \lambda^\pi_j A^k_{ij}\pi_j}
+\frac{\partial}{\partial\phi^k_i} \mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] - \lambda^\phi_i - \sum_j \lambda^\pi_j A^k_{ij}\pi_i & = & \\
+\beta \frac{\sum_{t:x_t = k}\gamma(z_t^i)}{\phi_i^k}  - \lambda^\phi_i  - \sum_j \lambda^\pi_j A^k_{ij}\pi_i & = & 0 \\
+\phi^k_i & = & \frac{\beta \sum_{t:x_t = k} \gamma(z_t^i)}{\lambda^\phi_i + \sum_j \lambda^\pi_j A^k_{ij}\pi_i}
 \end{eqnarray*}
 
 \begin{eqnarray*}
-\frac{\partial}{\partial A^k_{ij}} \mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] - \lambda^A_{ik} - \lambda^\pi_j \phi^k_i\pi_j & = & \\
-\frac{\sum_{t:x_t=k}\xi(z_t^i,z_{t+1}^j)}{A^k_{ij}} - \lambda^A_{ik} - \lambda^\pi_j \phi^k_i\pi_j & = & 0 \\
-A^k_{ij} & = & \frac{\sum_{t:x_t=k}\xi(z^i_t,z^j_{t+1})}{\lambda^A_{ik} + \lambda^\pi_j \phi^k_i \pi_j}
+\frac{\partial}{\partial A^k_{ij}} \mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] - \lambda^A_{ik} - \lambda^\pi_j \phi^k_i\pi_i & = & \\
+\frac{\sum_{t:x_t=k}\xi(z_t^i,z_{t+1}^j)}{A^k_{ij}} - \lambda^A_{ik} - \lambda^\pi_j \phi^k_i\pi_i & = & 0 \\
+A^k_{ij} & = & \frac{\sum_{t:x_t=k}\xi(z^i_t,z^j_{t+1})}{\lambda^A_{ik} + \lambda^\pi_j \phi^k_i \pi_i}
 \end{eqnarray*}
 
 \begin{eqnarray*}
@@ -113,13 +113,6 @@ A^k_{ij} & = & \frac{\sum_{t:x_t=k}\xi(z^i_t,z^j_{t+1})}{\lambda^A_{ik} + \lambd
 - \frac{\sum_{t=1}^T\gamma(z^j_t)}{\pi_j} - \lambda^\pi + \lambda^\pi_j - \sum_i \lambda^\pi_i\sum_k A^k_{ji}\phi^k_j & = & 0 \\
 \pi_j & = & \frac{\sum_{t=1}^T \gamma(z_t^j)}{-\lambda^\pi + \lambda^\pi_j - \sum_i\lambda^\pi_i \sum_k A^k_{ji}\phi^k_j}
 \end{eqnarray*}
-
-Plugging into the original constraint that defined $\pi_j$
-
-\begin{eqnarray*}
-\sum_i \sum_k A^k_{ij} \phi^k_i \pi_i - \pi_j & = & \\
-\sum_i \sum_k A^k_{ij} \phi^k_i 
-\begin{eqnarray*}
 
 \section{}
 
