@@ -9,7 +9,7 @@
 \usepackage{epstopdf}
 \DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
 
-\title{EM-like algorithms for training HMMs with IB}
+\title{A Rate-Distortion Approach to Training Hidden Markov Models}
 \author{David Pfau}
 %\date{}                                           % Activate to display a given date or no date
 
@@ -102,10 +102,10 @@ For a given sequence of data and latent states, we want to minimize the weighted
 \]
 Following the derivation of the EM algorithm, we take the expectation of this wrt to the conditional probability of the latent states given the current parameter estimates:
 
-\begin{eqnarray*}
+\begin{eqnarray}
 \mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] & = & \beta\sum_{t=0}^T\sum_i \gamma(z_t^i) \mathrm{log}\phi_{i}^{x_t} - \sum_{t=0}^{T-1}\sum_i\sum_j \xi(z_{t}^i,z_{t+1}^j)\mathrm{log}\frac{\pi_j}{A^{x^t}_{ij}} \\
-& = & \beta\sum_{t=0}^T\sum_i \gamma(z_t^i) \mathrm{log}\phi_{i}^{x_t} - \sum_{t=0}^{T-1}\sum_j \left(\gamma(z_{t+1}^j)\mathrm{log}\pi_j - \sum_i \xi(z_{t}^i,z_{t+1}^j)\mathrm{log}A^{x^t}_{ij}\right)
-\end{eqnarray*}
+& = & \beta\sum_{t=0}^T\sum_i \gamma(z_t^i) \mathrm{log}\phi_{i}^{x_t} - \sum_{t=0}^{T-1}\sum_j \left(\gamma(z_{t+1}^j)\mathrm{log}\pi_j - \sum_i \xi(z_{t}^i,z_{t+1}^j)\mathrm{log}A^{x^t}_{ij}\right) \nonumber
+\end{eqnarray}
 To derive the M step, we want to do a constrained maximization over the parameters $\theta = \{\vec{\phi_i},\vec{A}^k_i,\vec{\pi}\}$, where the constraints are that all vectors are normalized and that $\sum_i\sum_k A^k_{ij} \phi^i_k\pi_i = \pi_j$.  Introducing Lagrange multipliers and setting all derivatives equal to zero yields:
 
 \begin{eqnarray*}
@@ -116,32 +116,38 @@ To derive the M step, we want to do a constrained maximization over the paramete
 & & + \sum_j \lambda^\pi_j\left(\pi_j - \left(\sum_i \sum_k A^k_{ij}\phi^k_i\pi_i\right)\right)
 \end{eqnarray*}
 
-\begin{eqnarray*}
+\begin{eqnarray}
 \frac{\partial}{\partial\phi^k_i} \mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] - \lambda^\phi_i - \sum_j \lambda^\pi_j A^k_{ij}\pi_i & = & \\
 \beta \frac{\sum_{t:x_t = k}\gamma(z_t^i)}{\phi_i^k}  - \lambda^\phi_i  - \sum_j \lambda^\pi_j A^k_{ij}\pi_i & = & 0 \\
 \phi^k_i & = & \frac{\beta \sum_{t:x_t = k} \gamma(z_t^i)}{\lambda^\phi_i + \sum_j \lambda^\pi_j A^k_{ij}\pi_i}
-\end{eqnarray*}
+\end{eqnarray}
 
-\begin{eqnarray*}
+\begin{eqnarray}
 \frac{\partial}{\partial A^k_{ij}} \mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] - \lambda^A_{ik} - \lambda^\pi_j \phi^k_i\pi_i & = & \\
 \frac{\sum_{t:x_t=k}\xi(z_t^i,z_{t+1}^j)}{A^k_{ij}} - \lambda^A_{ik} - \lambda^\pi_j \phi^k_i\pi_i & = & 0 \\
 A^k_{ij} & = & \frac{\sum_{t:x_t=k}\xi(z^i_t,z^j_{t+1})}{\lambda^A_{ik} + \lambda^\pi_j \phi^k_i \pi_i}
-\end{eqnarray*}
+\end{eqnarray}
 
-\begin{eqnarray*}
+\begin{eqnarray}
 \frac{\partial}{\partial \pi_j} \mathbb{E}_{p(x,z|\theta^{old})}[\ell(x,z|\theta)] - \lambda^\pi + \lambda^\pi_j - \sum_i \lambda^\pi_i\sum_k A^k_{ji}\phi^k_j & = & \\
 - \frac{\sum_{t=1}^T\gamma(z^j_t)}{\pi_j} - \lambda^\pi + \lambda^\pi_j - \sum_i \lambda^\pi_i\sum_k A^k_{ji}\phi^k_j & = & 0 \\
 \pi_j & = & \frac{\sum_{t=1}^T \gamma(z_t^j)}{-\lambda^\pi + \lambda^\pi_j - \sum_i\lambda^\pi_i \sum_k A^k_{ji}\phi^k_j}
-\end{eqnarray*}
+\end{eqnarray}
 The above gives a set of coupled nonlinear equations for $\theta$ (note that unlike in standard Baum-Welch, the transition and emission probabilities are coupled by the stationary distribution term, which causes complex dependencies).  How to solve these, I do not know.
 
-Plugging back in to the condition that $\vec{\pi}$ is the stationary distribution of the Markov chain:
+One idea: while the equations above are nonlinear functions of $\vec{A}^k_i$, $\vec{\pi}$ and $\vec{\phi}_i$, they are linear functions of the Lagrange multipliers.  For $N$ latent states and $K$ observables there are $1 + (K + 2)N$ unknowns and $N(K(N+1) + 1)$ equations, so it is an overdetermined system.  We can treat this as a regression problem, finding the least squares solution by taking the pseudoinverse.  Then, perhaps plugging in the new $\lambda$ into equations (4) and (7), using the old values of $A^k_{ij}$, $\phi^k_i$ and $\pi_i$ on the left-hand sides, normalizing and solving for $\vec{\pi}$ by finding the stationary distribution, we can get new estimates of the parameters, and iterate.  I can't off the top of my head guarantee that it will converge, however.
 
-\begin{eqnarray*}
-\sum_i\pi_i\sum_k A^k_{ij}\phi^k_i & = & \\
-\sum_i  \frac{(\sum_{t=1}^T \gamma(z_t^i))\sum_k A^k_{ij}\phi^k_i}{-\lambda^\pi + \lambda^\pi_i - \sum_{j'}\lambda^\pi_{j'} \sum_k A^k_{ij'}\phi^k_i} & = & \frac{\sum_{t=1}^T \gamma(z_t^j)}{-\lambda^\pi + \lambda^\pi_j - \sum_i\lambda^\pi_i \sum_k A^k_{ji}\phi^k_j}
-\end{eqnarray*}
-which is not much more insightful, sadly.
+%Plugging back in to the condition that $\vec{\pi}$ is the stationary distribution of the Markov chain:
+
+%\begin{eqnarray*}
+%\sum_i\pi_i\sum_k A^k_{ij}\phi^k_i & = & \\
+%\sum_i  \frac{(\sum_{t=1}^T \gamma(z_t^i))\sum_k A^k_{ij}\phi^k_i}{-\lambda^\pi + \lambda^\pi_i - \sum_{j'}\lambda^\pi_{j'} \sum_k A^k_{ij'}\phi^k_i} & = & \frac{\sum_{t=1}^T \gamma(z_t^j)}{-\lambda^\pi + \lambda^\pi_j - \sum_i\lambda^\pi_i \sum_k A^k_{ji}\phi^k_j}
+%\end{eqnarray*}
+%which is not much more insightful, sadly.
+
+%\subsection{Projected Gradient Descent}
+
+%Let's try another approach: treat $\vec{\pi}$ like just another parameter, at each step move up the gradient and then project onto the subspace where $\vec{\pi}$ is the desired stationary distribution.  If there are $K$ observables and $N$ latent states, there are a total of $N(K(N+1) + 1) = \mathcal{O}(KN^2)$ parameters.  The gradients are quite simple, given above: simply the sufficient statistics 
 
 \section{M step with more IB-like objective}
 

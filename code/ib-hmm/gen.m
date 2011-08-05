@@ -6,6 +6,6 @@ end
 seq = zeros(len,1);
 z = sample(stat(join_oom(O,T)));
 for i = 1:len
-    seq(i) = sample(O(:,z));
+    seq(i) = sample(O(z,:));
     z = sample(T(:,z,seq(i)));
 end

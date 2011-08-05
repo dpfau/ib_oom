@@ -6,8 +6,8 @@ else
     A = O;
 end
 
-alpha = zeros(size(O,2),length(seq));
-beta  = zeros(size(O,2),length(seq));
+alpha = zeros(size(A,1),length(seq));
+beta  = zeros(size(A,1),length(seq));
 c = zeros(length(seq),1);
 
 z = stat(A);
@@ -18,7 +18,7 @@ for i = 1:length(seq)
     z = z/c(i);
 end
 
-beta(:,end) = O(seq(end),:)'/c(end);
+beta(:,end) = O(:,seq(end))/c(end);
 for i = length(seq)-1:-1:1
     beta(:,i) = A(:,:,seq(i))'*beta(:,i+1)/c(i);
 end
