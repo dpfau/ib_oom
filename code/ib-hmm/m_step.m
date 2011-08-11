@@ -1,4 +1,4 @@
-function [o,t] = e_step(g,gt,xi,beta,O,T,Z)
+function [o,t,z] = m_step(g,gt,xi,beta,O,T,Z)
 
 len = numel(O) + numel(T) + numel(Z);
 n = size(T,1);
@@ -10,7 +10,7 @@ assert( size(O,2) == k );
 assert( size(Z,1) == n );
 assert( size(Z,2) == 1 );
 
-x = fmincon( @(x) [beta * g(:); xi(:); -gt(:)]'*log(x), ...
+x = fmincon( @(x) ob(x,g,gt,xi,beta), ...
     [O(:); T(:); Z(:)], ...
     [], ...
     [], ...
@@ -21,10 +21,11 @@ x = fmincon( @(x) [beta * g(:); xi(:); -gt(:)]'*log(x), ...
     zeros(len,1), ...
     ones(len,1), ...
     @(x) stat_con(x,n,k), ...
-    optimset('Algorithm','interior-point'));
+    optimset('Algorithm','sqp'));
 
 o = reshape(x(1:n*k),n,k);
 t = reshape(x(n*k+(1:n^2*k)),n,n,k);
+z = x((n+1)*n*k+(1:n));
 
 function [C Ceq] = stat_con(x,n,k)
 % constraint that Z is stationary distribution of 
@@ -35,3 +36,9 @@ z = x((n+1)*n*k+(1:n));
 
 C = 0;
 Ceq = (tprod(t,[1 2 -1],o,[2 -1]) - eye(n)) * z;
+
+function y = ob(x,g,gt,xi,beta)
+
+z = log(x);
+%z(isinf(z)) = 0;
+y = [-beta * g(:); -xi(:); gt(:)]'*z;
