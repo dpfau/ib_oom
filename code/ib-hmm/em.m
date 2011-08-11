@@ -22,5 +22,5 @@ while 1
     end
     %% M Step
     [o,t,~] = m_step(g,gt,xi,b,o,t,stat(join_oom(o,t)));
-    fprintf('Objective: %d\n',obj(g,gt,xi,o,t,b);
+    fprintf('Objective: %d\n',obj(g,gt,xi,o,t,b));
 end
